@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Brender_0_5
 {
@@ -10,16 +11,16 @@ namespace Brender_0_5
     /// It is possible to attach multiple components to it
     /// </summary>
     [Serializable()]
-    public class Object : IMenu
+    public class Object : IMenu, ICreatable
     {
         #region basic properties ////////////////////////////////////////////
 
         public Ref<string> name = new Ref<string>();
-        Ref<Vector3> position = new Ref<Vector3>();
+        public Vector3 position = new Vector3();
         Ref<quaternion> quatRotation = new Ref<quaternion>();
-        Ref<Vector3> scale = new Ref<Vector3>();
-        Ref<Object[]> children = new Ref<Object[]> { value = new Object[0] };
-        Ref<Component[]> components = new Ref<Component[]> { value = new Component[0] };
+        public Vector3 scale = new Vector3();
+        public Object[] children = new Object[0];
+        public Component[] components = new Component[0];
 
         public string Name
         {
@@ -31,11 +32,6 @@ namespace Brender_0_5
             {
                 name.value = value;
             }
-        }
-        public Vector3 Position
-        {
-            get { return position.value; }
-            set { position.value = value; }
         }
         public quaternion QuatRotation
         {
@@ -53,89 +49,48 @@ namespace Brender_0_5
                 quatRotation.value = Quaternion.Euler(value, false);
             }
         }
-        public Vector3 Scale
-        {
-            get { return scale.value; }
-            set { scale.value = value; }
-        }
-
-        public Object[] Children
-        {
-            get { return children.value; }
-            set { children.value = value; }
-        }
-        public Component[] Components
-        {
-            get { return components.value; }
-            set { components.value = value; }
-        }
 
         [NonSerialized]
         public bool moved = true;
         #endregion
 
-        #region defining changable properties ///////////////////////
-        readonly string[] names = new string[] /* names of changable variables to be displayed in a menu when you want to change some of them */
-        {
-            "Name",
-            "Position",
-            "Rotation",
-            "Scale",
-            "Components",
-            "Children"
-        };
-
-        object[] variables = new object[6];
-
-        void DefineChangables()
-        {
-            variables[0] = name;
-            variables[1] = position;
-            variables[2] = quatRotation;
-            variables[3] = scale;
-            variables[4] = Components;
-            variables[5] = Children;
-        }
-        #endregion
-
         // runtime coordinates in sceene inertial frame of reference
         [NonSerialized]
-        public Vector3 globalPosition;
+        public Vector3 globalPosition = new Vector3();
         [NonSerialized]
-        public quaternion globalRotation;
+        public quaternion globalRotation = new quaternion();
         [NonSerialized]
-        public Vector3 globalScale;
+        public Vector3 globalScale = new Vector3();
 
         #region some ways to declare instances
         public Object()
         {
-            DefineChangables();
+            Name = "name";
+            position = Vector3.Zero();
+            Rotation = Vector3.Zero();
+            scale = Vector3.FullOne();
         }
 
         public Object(Component[] components)
         {
-            DefineChangables();
-            
-            this.Name = "name";
-            this.Position = Vector3.Zero();
+            Name = "name";
+            position = Vector3.Zero();
             Rotation = Vector3.Zero();
-            Scale = Vector3.FullOne();
+            scale = Vector3.FullOne();
             
-            this.Components = components;
-            foreach (Component component in this.Components)
+            this.components = components;
+            foreach (Component component in this.components)
             {
                 component._object = this;
             }
         }
 
-        public Object(string name, Vector3 position)
+        public Object(string name, Vector3 pos)
         {
-            DefineChangables();
-            
-            this.Name = name;
-            this.Position = position;
+            Name = name;
+            position = pos;
             Rotation = Vector3.Zero();
-            Scale = Vector3.FullOne();
+            scale = Vector3.FullOne();
         }
         #endregion
 
@@ -145,9 +100,9 @@ namespace Brender_0_5
 
             if (moved)
             {
-                globalPosition = parentGP + Quaternion.RotatePoint(parentGR, Position & parentGS);
+                globalPosition = parentGP + Quaternion.RotatePoint(parentGR, position & parentGS);
                 globalRotation = parentGR * QuatRotation;
-                globalScale = Scale & parentGS;
+                globalScale = scale & parentGS;
             }
 
             //Console.WriteLine(name);
@@ -155,7 +110,7 @@ namespace Brender_0_5
             //Console.WriteLine("{0},  {1},  {2},  {3}", globalRotation.w, globalRotation.vector.x, globalRotation.vector.y, globalRotation.vector.z);
             //Console.WriteLine("{0},  {1},  {2}", globalScale.x, globalScale.y, globalScale.z);
 
-            foreach (Object child in Children)
+            foreach (Object child in children)
             {
                 child.Update(globalPosition, globalRotation, globalScale, moved);
             }
@@ -175,14 +130,14 @@ namespace Brender_0_5
 
             Vector3[] points = new Vector3[8]
             {
-                new Vector3(-size.X, -size.Y, -size.Z),
-                new Vector3(size.X, -size.Y, -size.Z),
-                new Vector3(size.X, size.Y, -size.Z),
-                new Vector3(-size.X, size.Y, -size.Z),
-                new Vector3(-size.X, -size.Y, size.Z),
-                new Vector3(size.X, -size.Y, size.Z),
-                new Vector3(size.X, size.Y, size.Z),
-                new Vector3(-size.X, size.Y, size.Z)
+                new Vector3(-size.x, -size.y, -size.z),
+                new Vector3(size.x, -size.y, -size.z),
+                new Vector3(size.x, size.y, -size.z),
+                new Vector3(-size.x, size.y, -size.z),
+                new Vector3(-size.x, -size.y, size.z),
+                new Vector3(size.x, -size.y, size.z),
+                new Vector3(size.x, size.y, size.z),
+                new Vector3(-size.x, size.y, size.z)
             };
 
             int[][] pointOrder = new int[6][]
@@ -218,20 +173,74 @@ namespace Brender_0_5
                 polygons[i] = new Polygon(localPoints, outline, sides[i]);
             }
 
-            Component[] newComponents = new Component[Components.Length + 1];
-            Array.Copy(Components, newComponents, Components.Length);
+            Component[] newComponents = new Component[components.Length + 1];
+            Array.Copy(components, newComponents, components.Length);
 
             newComponents[newComponents.Length - 1] = new Mesh(polygons);
             newComponents[newComponents.Length - 1]._object = this;
 
-            Components = newComponents;
+            components = newComponents;
         }
 
-        public bool StartOwnMenu()
+        #region defining menu option and their names ///////////////////////
+        static readonly string[] names = new string[] /* names of changable variables to be displayed in a menu when you want to change some of them */
         {
-            Menu menu = new Menu(name, names, variables);
+            "Name",
+            "Position",
+            "Rotation",
+            "Scale",
+            "Components",
+            "Children",
+            "Create prefab"
+        };
+
+        public void StartOwnMenu()
+        {
+            // preparing function for each f'n name
+            List<object> optionFns = new List<object>();
+
+            
+            List<Object> obj = new List<Object>();
+            for (int i = 0; i < children.Length; i++)
+            {
+                obj.Add(children[i]);
+            }
+
+            List<Component> comp = new List<Component>();
+            for (int i = 0; i < components.Length; i++)
+            {
+                comp.Add(components[i]);
+            }
+
+            optionFns.Add(name);
+            optionFns.Add(position);
+            optionFns.Add(quatRotation);
+            optionFns.Add(scale);
+            optionFns.Add(comp);
+            optionFns.Add(obj);
+            optionFns.Add(new Saver(this));
+
+            // creating a menu
+            ListMenu<object> menu = new ListMenu<object>(name, names, optionFns);
             menu.EngageMenu();
-            return false;
+
+            // restoring some possibly changed variables back to this class
+            children = obj.ToArray();
+            components = comp.ToArray();
+        }
+        #endregion
+
+        public X GetComponent<X>() where X : Component
+        {
+            for (int i = 0; i < components.Length; i++)
+            {
+                if (components[i] is X)
+                {
+                    return (X)components[i];
+                }
+            }
+
+            throw new MissingMemberException();
         }
     }
 

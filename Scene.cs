@@ -3,54 +3,30 @@ using System.Collections.Generic;
 
 namespace Brender_0_5
 {
-    public class Scene : IMenu
+    [Serializable]
+    public class Scene : IMenu, ICreatable
     {
         #region basic properties ////////////////////////////////////
-        Ref<string> name = new Ref<string> { value = "test" };
-        Ref<Object[]> objects = new Ref<Object[]> { value = new Object[0] };
-        
-        string Name
+        public Ref<string> name = new Ref<string> { value = "test" };
+        public Object[] objects = new Object[0];
+        public Camera mainCamera;
+
+        public string Name
         {
             get { return name.value; }
             set { name.value = value; }
         }
-        public Object[] Objects
-        {
-            get { return objects.value; }
-            set { objects.value = value; }
-        }
-        public Camera mainCamera = new Camera();
         #endregion
-
-        #region defining changable properties ///////////////////////
-        readonly string[] options = new string[] /* names of changable variables to be displayed in a menu when you want to change some of them */
-        {
-            "Name",
-            "Objects",
-            "Main Camera"
-        };
-
-        object[] optionFns = new object[3];
-
-        void DefineChangables()
-        {
-            optionFns[0] = name;
-            optionFns[1] = objects;
-            optionFns[2] = mainCamera;
-        }
-        #endregion
-
-        bool paused = true;
 
         public Scene(Object[] objects)
         {           
             Name = "scene";
 
-            this.Objects = objects;
+            this.objects = objects;
 
             foreach (Object _object in objects)
             {
-                foreach (Component component in _object.Components)
+                foreach (Component component in _object.components)
                 {
                     if (component is Camera camera)
                     {
@@ -61,27 +37,31 @@ namespace Brender_0_5
             }
             loopExit:;
 
-            DefineChangables();
-
-            Name = "fucking work";
+            Name = "Name";
         }
 
         public List<Component> components;
 
+        /// <summary>
+        /// Makes objects update their coordinates
+        /// </summary>
         public void UpdateObjects()
         {
-            foreach (Object _object in Objects)
+            foreach (Object _object in objects)
             {
                 _object.Update(Vector3.Zero(), Quaternion.Euler(Vector3.Zero()), Vector3.FullOne());
             }
         }
 
+        /// <summary>
+        /// Updates components in the desired order
+        /// </summary>
         public void UpdateComponents()
         {
             HolderClass.polygons = new List<Polygon>();
             
-            FindComponents();
-            Type[] types = new Type[] { typeof(Controls), typeof(Mesh), typeof(Camera) };
+            FindComponents(); // finds all components
+            Type[] types = new Type[] { typeof(Controls), typeof(Mesh), typeof(Camera) }; // the order in which components will be updated
 
             for (int i = 0; i < types.Length; i++)
             {
@@ -99,13 +79,17 @@ namespace Brender_0_5
         public void FindComponents()
         {
             components = new List<Component>();
-            foreach (Object _object in Objects)
+            foreach (Object _object in objects)
             {
-                foreach (Component component in _object.Components)
+                foreach (Component component in _object.components)
                 {
                     components.Add(component);
+                    if (component._object == null)
+                    {
+                        component._object = _object;
+                    }
                 }
-                foreach (Object child in _object.Children)
+                foreach (Object child in _object.children)
                 {
                     ComponentsOfChildren(child);
                 }
@@ -114,17 +98,16 @@ namespace Brender_0_5
 
         public void ComponentsOfChildren(Object _object)
         {
-            foreach (Component component in _object.Components)
+            foreach (Component component in _object.components)
             {
                 components.Add(component);
-            }
-            foreach (Object child in _object.Children)
-            {
-                if (paused)
+                if (component._object == null)
                 {
-
+                    component._object = _object;
                 }
-                
+            }
+            foreach (Object child in _object.children)
+            {
                 ComponentsOfChildren(child);
             }
         }
@@ -134,7 +117,10 @@ namespace Brender_0_5
             UpdateObjects();
             UpdateComponents();
 
-            FTLConsole.Render(mainCamera.image);
+            if (mainCamera != null)
+            {
+                FTLConsole.Render(mainCamera.image);
+            }
 
             /*Console.ForegroundColor = ConsoleColor.White;
             Console.BackgroundColor = ConsoleColor.Black;
@@ -144,25 +130,102 @@ namespace Brender_0_5
             //Console.WriteLine("{0}, {1}, {2}", mainCamera._object.Rotation.x, mainCamera._object.Rotation.y, mainCamera._object.Rotation.z);*/
         }
 
-        public bool StartOwnMenu()
+
+        #region defining changable properties ///////////////////////
+        static readonly string[] options = new string[] /* names of changable variables to be displayed in a menu when you want to change some of them */
         {
-            Menu menu = new Menu(name, options, optionFns);
+            "Name",
+            "objects",
+            "Main Camera",
+            "SAVE"
+        };
+
+        public void StartOwnMenu()
+        {
+            // creating option functions
+            List<object> optionFns = new List<object>();
+            
+            List<Object> obj = new List<Object>();
+            for (int i = 0; i < objects.Length; i++)
+            {
+                obj.Add(objects[i]);
+            }
+            
+            optionFns.Add(name);
+            optionFns.Add(obj);
+            optionFns.Add(mainCamera);
+            optionFns.Add(new Saver(this));
+            
+            // starting menu
+            ListMenu<object> menu = new ListMenu<object>(name, options, optionFns);
             menu.EngageMenu();
 
-            TheyMoved(Objects);
+            // user might have chanched stuff; would be hard to figure out exactly what so just update everything
+            TheyMoved(objects);
 
-            return false;
+            // restoring some possibly changed variables back to this class
+            objects = obj.ToArray();
         }
+        #endregion
 
         // the position of objects would not be recalculated after changing in the pause menu, seting individual objects to recalculate seems
         // due to the nature of pause menu difficult, so lets set them all as if they have been moved
-        void TheyMoved(Object[] objs)
+        public void TheyMoved(Object[] objs)
         {
             foreach (Object obj in objs)
             {
                 obj.moved = true;
-                TheyMoved(obj.Children);
+                TheyMoved(obj.children);
             }
         }
     }
+
+    #region Planned for main camera changing
+    /*
+    /// <summary>
+    /// I need this separated because I don't want to search through all objects to find cameras immediately when I pause
+    /// </summary>
+    public class MainCompModifier<T> where T : Component
+    {
+        Scene scene;
+        
+        List<Ref<T>> comp = null; //I also need to put these in the Ref class to differentiate them from normal cameras in the overloaded f'ns in the menu
+        List<string> names = null;
+        
+        public T SearchForComponents()
+        {
+            comp = new List<Ref<T>>();
+            names = new List<string>();
+
+            CheckChildren(scene.objects);
+
+            ListMenu<T> menu = new ListMenu<T>("Choose main component", names.ToArray(), comp.ToArray());
+            menu.returns = true;
+            menu.EngageMenu();
+
+            return (T)new Component();
+        }
+
+        /// <summary>
+        /// Simply finds components and names of such objects that have them (children included)
+        /// </summary>
+        /// <param name="objects"></param>
+        void CheckChildren(Object[] objects)
+        {
+            for (int i = 0; i < objects.Length; i++)
+            {
+                try
+                {
+                    comp.Add(new Ref<T> { value = objects[i].GetComponent<T>() });
+                    names.Add(objects[i].Name);
+                }
+                catch (MissingMemberException)
+                {
+                }
+
+                CheckChildren(objects[i].children);
+            }
+        }
+    }*/
+    #endregion
 }

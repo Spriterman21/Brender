@@ -4,12 +4,17 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Runtime.InteropServices;
 
+// https://sketchfab.com/3d-models/doom-e1m1-hangar-map-2148fb6a3fe7454b901fcea67d70b318  doom
+
 namespace Brender_0_5
 {
     class Program
     {
         static void Main(string[] args)
         {
+            Console.CursorVisible = false;
+            EngagingBaseMenu();
+
             HolderClass.x = Console.BufferWidth;
             HolderClass.y = Console.BufferHeight;
             
@@ -75,13 +80,13 @@ namespace Brender_0_5
             Object gb6 = HolderClass.DeepClone(gb0);
             Object sb2 = HolderClass.DeepClone(sb);
 
-            gb4.Position = new Vector3(2, 0, 0);
+            gb4.position = new Vector3(2, 0, 0);
             gb4.moved = true;
-            gb5.Position = new Vector3(2, 1, 0);
+            gb5.position = new Vector3(2, 1, 0);
             gb5.moved = true;
-            gb6.Position = new Vector3(3, 1, 0);
+            gb6.position = new Vector3(3, 1, 0);
             gb6.moved = true;
-            sb2.Position = new Vector3(1, 0, -1);
+            sb2.position = new Vector3(1, 0, -1);
             sb2.moved = true;
 
             #endregion
@@ -352,9 +357,9 @@ namespace Brender_0_5
             #region camera
             // camera //////////////////////////
             camera.Name = "camera";
-            camera.Position = new Vector3(0, -10, 0);
+            camera.position = new Vector3(0, -10, 0);
             camera.Rotation = Vector3.Zero();
-            camera.Scale = Vector3.FullOne();
+            camera.scale = Vector3.FullOne();
 
             cam.viewingAngle = 0.5f;
             cam._object = camera;
@@ -362,7 +367,7 @@ namespace Brender_0_5
             #endregion
 
             List<string> linesList = new List<string>();
-            using (StreamReader sr = new StreamReader(@"..\..\..\utahTeapot.txt"))
+            using (StreamReader sr = new StreamReader(@"..\..\..\doom_E1M1.obj"))
             {
                 string line;
                 while ((line = sr.ReadLine()) != null)
@@ -372,9 +377,9 @@ namespace Brender_0_5
                 }
             }
 
-            Object teapot = ObjImporter.Import(linesList.ToArray());
-            teapot.Scale = new Vector3(0.5f, 0.5f, 0.5f) / 2;
-            Scene scene = new Scene(new Object[] { /*gb0, gb1, gb2, gb3, gb4, gb5, gb6, log, leaves0, leaves1, leaves2, leaves3, leaves4, sb, sb2, Creeper,*/ teapot, camera });
+            Object teapot = ObjImporter.Import(@"..\..\..\doom_E1M1.obj");
+            teapot.scale = new Vector3(0.5f, 0.5f, 0.5f) * 2;
+            Scene scene = new Scene(new Object[] { gb0, gb1, gb2, gb3, gb4, gb5, gb6, log, leaves0, leaves1, leaves2, leaves3, leaves4, sb, sb2/*, Creeper,/* teapot*/, camera });
             scene.mainCamera = cam;
             HolderClass.sw.Start();
 
@@ -422,28 +427,33 @@ namespace Brender_0_5
             ///////////////////////////////////////////////////////////////////////////////////////////
         }
 
-        static void PauseMenu()
+        static void EngagingBaseMenu()
         {
-            Console.Clear();
+            string[] options = new string[]
+            {
+                "Choose scene",
+                "Set scenes path",
+                "Set prefabs path",
+                "Controls help"
+            };
+
+            List<object> optionFns = new List<object>();
+
+            Ref<string> scenesPath = new Ref<string>(HolderClass.scenesPath);
+            Ref<string> prefabsPath = new Ref<string>(HolderClass.prefabsPath);
+
+            optionFns.Add(new List<Scene>());
+            optionFns.Add(scenesPath);
+            optionFns.Add(prefabsPath);
+            optionFns.Add("testing");
+
             while (true)
             {
-                ConsoleKeyInfo key = HolderClass.key = new ConsoleKeyInfo();
-                bool gotKey = false;
+                ListMenu<object> menu = new ListMenu<object>(new Ref<string>("Main menu"), options, optionFns);
+                menu.EngageMenu();
 
-                while (Console.KeyAvailable)
-                {
-                    key = Console.ReadKey(true);
-                    gotKey = true;
-                }
-
-                if (gotKey)
-                {
-                    Console.Write(key.Key);
-                    if (key.Key == ConsoleKey.Escape)
-                    {
-                        break;
-                    }
-                }
+                HolderClass.prefabsPath = prefabsPath.value;
+                HolderClass.scenesPath = scenesPath.value;
             }
         }
     }

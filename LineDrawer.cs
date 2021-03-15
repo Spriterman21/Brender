@@ -7,7 +7,6 @@ namespace Brender_0_5
     public static class LineDrawer
     {
         static CharInfo[,] canvas;
-        static float[,] zBuffering; 
         static CharInfo pixel;
 
         static CharInfo[][] canvasOverflowPixels = new CharInfo[2][];
@@ -678,13 +677,20 @@ namespace Brender_0_5
             canvasOverflowPixels[0] = new CharInfo[canvasY];
             canvasOverflowPixels[1] = new CharInfo[canvasY];
 
+            // connects ajasoned points
             pixel = polygon.edges;
             for (int i = 0; i < polygon.canvasPoints.Length - 1; i++)
             {
                 PlotLineUpDown(polygon.canvasPoints[i], polygon.canvasPoints[i + 1]);
             }
-            PlotLineUpDown(polygon.canvasPoints[polygon.canvasPoints.Length - 1], polygon.canvasPoints[0]);
 
+            // connects first and last point to close in the polygon
+            if (polygon.canvasPoints.Length != 0)
+            {
+                PlotLineUpDown(polygon.canvasPoints[polygon.canvasPoints.Length - 1], polygon.canvasPoints[0]);
+            }
+
+            // same fill colour as background means don't fill -> transparent
             if (polygon.fill != HolderClass.background)
             {
                 pixel = polygon.fill;

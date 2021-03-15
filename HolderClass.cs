@@ -10,6 +10,7 @@ namespace Brender_0_5
 {
     public static class HolderClass
     {
+        public static Scene activeScene; // litterally what it says
         public static List<Polygon> polygons; // collection of all polygons in active scene to be used by cameras
         public static ConsoleKeyInfo key; // the key pressed in this frame
         public static CharInfo background; // the default background of the console
@@ -19,6 +20,9 @@ namespace Brender_0_5
         public static int y; // vertical size of window
 
         public static Stopwatch sw = new Stopwatch();
+
+        public static string prefabsPath = @"..\..\..\Prefabs";
+        public static string scenesPath = @"..\..\..\Scenes";
 
         /// <summary>
         /// creates a deep copy of a class (or something else)
@@ -34,7 +38,77 @@ namespace Brender_0_5
                 formatter.Serialize(ms, obj);
                 ms.Position = 0;
 
+                
                 return (T)formatter.Deserialize(ms);
+            }
+        }
+
+        public static T Loader<T>(string path)
+        {
+            using (FileStream fs = new FileStream(path, FileMode.Open))
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                return (T)formatter.Deserialize(fs);
+            }
+        }
+
+        public static void Saver<T>(this T obj, string path)
+        {
+            //Directory.CreateDirectory(path);
+            using (FileStream fs = new FileStream(path, FileMode.Create))
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(fs, obj);
+            }
+        }
+
+        public static string[] FileNames(string folderPath)
+        {
+            //Directory.CreateDirectory(folderPath);
+            DirectoryInfo dir = new DirectoryInfo(folderPath);
+            FileInfo[] files = dir.GetFiles();
+            string[] fileNames = new string[files.Length];
+
+            for (int i = 0; i < files.Length; i++)
+            {
+                fileNames[i] = files[i].Name;
+            }
+
+            return fileNames;
+        }
+    }
+
+    public class Saver
+    {
+        public Saver(ICreatable toSave)
+        {
+            this.toSave = toSave;
+        }
+
+        ICreatable toSave;
+
+        public void Save()
+        {
+            if (toSave is Object)
+            {
+                string fileName = (toSave as Object).Name;
+                fileName = fileName.Trim( '\\', '/', ':', '*', '?', '"', '<', '>', '|');
+
+                if (fileName.Length == 0)
+                {
+                    fileName = DateTime.Now.ToString("yyyy/MM//dd/hh/mm/ss");
+                }
+                HolderClass.Saver(toSave as Object, HolderClass.prefabsPath + "\\" + fileName);
+            }
+            else if (toSave is Scene)
+            {
+                string fileName = (toSave as Scene).Name;
+                fileName = fileName.Trim('\\', '/', ':', '*', '?', '"', '<', '>', '|');
+                if (fileName.Length == 0)
+                {
+                    fileName = DateTime.Now.ToString("yyyy/MM//dd/hh/mm/ss");
+                }
+                HolderClass.Saver(toSave as Scene, HolderClass.scenesPath + "\\" + fileName);
             }
         }
     }

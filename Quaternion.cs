@@ -67,7 +67,7 @@ namespace Brender_0_5
 
         public float Length()
         {
-            return MathF.Sqrt(w * w + vector.X * vector.X + vector.Y * vector.Y + vector.Z * vector.Z);
+            return MathF.Sqrt(w * w + vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
         }
 
         public quaternion Normalize()
@@ -81,9 +81,9 @@ namespace Brender_0_5
         public quaternion Round(int digits = 6)
         {
             w = MathF.Round(w, digits);
-            vector.X = MathF.Round(vector.X, digits);
-            vector.Y = MathF.Round(vector.Y, digits);
-            vector.Z = MathF.Round(vector.Z, digits);
+            vector.x = MathF.Round(vector.x, digits);
+            vector.y = MathF.Round(vector.y, digits);
+            vector.z = MathF.Round(vector.z, digits);
 
             return this;
         }
@@ -168,18 +168,18 @@ namespace Brender_0_5
             // just making it into radians
             if (!radians)
             {
-                rotation.X *= MathF.PI / 180;
-                rotation.Y *= MathF.PI / 180;
-                rotation.Z *= MathF.PI / 180;
+                rotation.x *= MathF.PI / 180;
+                rotation.y *= MathF.PI / 180;
+                rotation.z *= MathF.PI / 180;
             }
 
             // pretty much just a coppied math formula
-            float c0 = MathF.Cos(rotation.Y / 2);
-            float c1 = MathF.Cos(rotation.Z / 2);
-            float c2 = MathF.Cos(rotation.X / 2);
-            float s0 = MathF.Sin(rotation.Y / 2);
-            float s1 = MathF.Sin(rotation.Z / 2);
-            float s2 = MathF.Sin(rotation.X / 2);
+            float c0 = MathF.Cos(rotation.y / 2);
+            float c1 = MathF.Cos(rotation.z / 2);
+            float c2 = MathF.Cos(rotation.x / 2);
+            float s0 = MathF.Sin(rotation.y / 2);
+            float s1 = MathF.Sin(rotation.z / 2);
+            float s2 = MathF.Sin(rotation.x / 2);
 
             return new quaternion(
                 c0 * c1 * c2 - s0 * s1 * s2,
@@ -203,16 +203,16 @@ namespace Brender_0_5
             if (outRadians)
             {
                 return new Vector3(
-                    MathF.Atan2(2 * (q.w * q.vector.X + q.vector.Y * q.vector.Z), 1 - 2 * (q.vector.X * q.vector.X + q.vector.Y * q.vector.Y)),
-                    MathF.Asin(2 * (q.w * q.vector.Y - q.vector.Z * q.vector.X)),
-                    MathF.Atan2(2 * (q.w * q.vector.Z + q.vector.X * q.vector.Y), 1 - 2 * (q.vector.Y * q.vector.Y + q.vector.Z * q.vector.Z))
+                    MathF.Atan2(2 * (q.w * q.vector.x + q.vector.y * q.vector.z), 1 - 2 * (q.vector.x * q.vector.x + q.vector.y * q.vector.y)),
+                    MathF.Asin(2 * (q.w * q.vector.y - q.vector.z * q.vector.x)),
+                    MathF.Atan2(2 * (q.w * q.vector.z + q.vector.x * q.vector.y), 1 - 2 * (q.vector.y * q.vector.y + q.vector.z * q.vector.z))
                 ).Round();
             }
 
             return new Vector3(
-                MathF.Atan2(2 * (q.w * q.vector.X + q.vector.Y * q.vector.Z), 1 - 2 * (q.vector.X * q.vector.X + q.vector.Y * q.vector.Y)) * 180 / MathF.PI,
-                MathF.Asin(2 * (q.w * q.vector.Y - q.vector.Z * q.vector.X)) * 180 / MathF.PI,
-                MathF.Atan2(2 * (q.w * q.vector.Z + q.vector.X * q.vector.Y), 1 - 2 * (q.vector.Y * q.vector.Y + q.vector.Z * q.vector.Z)) * 180 / MathF.PI
+                MathF.Atan2(2 * (q.w * q.vector.x + q.vector.y * q.vector.z), 1 - 2 * (q.vector.x * q.vector.x + q.vector.y * q.vector.y)) * 180 / MathF.PI,
+                MathF.Asin(2 * (q.w * q.vector.y - q.vector.z * q.vector.x)) * 180 / MathF.PI,
+                MathF.Atan2(2 * (q.w * q.vector.z + q.vector.x * q.vector.y), 1 - 2 * (q.vector.y * q.vector.y + q.vector.z * q.vector.z)) * 180 / MathF.PI
             ).Round();
         }
 
@@ -225,7 +225,7 @@ namespace Brender_0_5
         public static Vector3 QuatE2 (quaternion q, bool radians = true)
         {
             // not even sure, where I got this one, guess I should delete it soon
-            float test = q.vector.X * q.vector.Y + q.vector.Z * q.w;
+            float test = q.vector.x * q.vector.y + q.vector.z * q.w;
 
             float attitude;
             float bank;
@@ -235,22 +235,22 @@ namespace Brender_0_5
             { // singularity at north pole
                 bank = MathF.PI / 2f;
                 heading = 0;
-                attitude = 2 * MathF.Atan2(q.vector.X, q.w);
+                attitude = 2 * MathF.Atan2(q.vector.x, q.w);
             }
             else if (test < -0.499)
             { // singularity at south pole
-                attitude = -2 * MathF.Atan2(q.vector.X, q.w);
+                attitude = -2 * MathF.Atan2(q.vector.x, q.w);
                 bank = -MathF.PI / 2f;
                 heading = 0;
             }
             else
             {
-                float sqx = q.vector.X * q.vector.X;
-                float sqy = q.vector.Y * q.vector.Y;
-                float sqz = q.vector.Z * q.vector.Z;
-                attitude = MathF.Atan2(2 * q.vector.Y * q.w - 2 * q.vector.X * q.vector.Z, 1 - 2 * sqy - 2 * sqz);
+                float sqx = q.vector.x * q.vector.x;
+                float sqy = q.vector.y * q.vector.y;
+                float sqz = q.vector.z * q.vector.z;
+                attitude = MathF.Atan2(2 * q.vector.y * q.w - 2 * q.vector.x * q.vector.z, 1 - 2 * sqy - 2 * sqz);
                 bank = MathF.Asin(2 * test);
-                heading = MathF.Atan2(2 * q.vector.X * q.w - 2 * q.vector.Y * q.vector.Z, 1 - 2 * sqx - 2 * sqz);
+                heading = MathF.Atan2(2 * q.vector.x * q.w - 2 * q.vector.y * q.vector.z, 1 - 2 * sqx - 2 * sqz);
             }
 
             if (!radians)

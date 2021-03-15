@@ -7,6 +7,10 @@ namespace Brender_0_5
     [Serializable()]
     public class Camera : Component
     {
+        public Camera()
+        {
+        }
+
         public static float HWratio = 9f / 20f; // ratio of the height and width of a character in console
 
         public float viewingAngle; // literally FOV
@@ -148,9 +152,15 @@ namespace Brender_0_5
             {
                 for (int j = 0; j < addCanvas.GetLength(0); j++)
                 {
-                    if (addCanvas[j, i] != HolderClass.background)
+                    try
                     {
-                        image[j, i] = addCanvas[j, i];
+                        if (addCanvas[j, i] != HolderClass.background)
+                        {
+                            image[j, i] = addCanvas[j, i];
+                        } // there seems to be a problem here sometimes
+                    }
+                    catch (Exception)
+                    {
                     }
                 }
             }
@@ -158,6 +168,7 @@ namespace Brender_0_5
 
         public override void Update()
         {
+            image = new CharInfo[HolderClass.x = Console.BufferWidth, HolderClass.y = Console.BufferHeight];
             Polygon[] polygons = HolderClass.polygons.ToArray(); // load all polygons to render
             
             axes = new Vector3[3] // the axes of the camera centered inertial frame of reference
@@ -194,8 +205,7 @@ namespace Brender_0_5
             // sorts polygons acording to Painter algorithm
             BubbleSort(polygons);
 
-            // renders polygons onto a newly created canvas
-            image = new CharInfo[HolderClass.x = Console.BufferWidth, HolderClass.y = Console.BufferHeight];
+            // renders polygons onto the newly created canvas
             for (int i = 0; i < polygons.Length; i++)
             {
                 if (polygons[i].draw)
@@ -264,5 +274,27 @@ namespace Brender_0_5
                 // aaaaanyway, this little catch seems to solve all my problems
             }
         }
+
+        #region Menu creation
+        static readonly string[] names = new string[]
+        {
+            "Name",
+            "FOV"
+        };
+
+        public override void StartOwnMenu()
+        {
+            List<object> optionFns = new List<object>();
+            Ref<float> fov = new Ref<float>(viewingAngle);
+
+            optionFns.Add(name);
+            optionFns.Add(fov);
+
+            ListMenu<object> menu = new ListMenu<object>(name, names, optionFns);
+            menu.EngageMenu();
+
+            viewingAngle = fov.value;
+        }
+        #endregion
     }
 }
