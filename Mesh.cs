@@ -44,7 +44,7 @@ namespace Brender_0_5
         static readonly string[] names = new string[] /* names of changable variables to be displayed in a menu when you want to change some of them */
         {
             "Name",
-            "Polygons",
+            "Polygons"
         };
 
         public override void StartOwnMenu()

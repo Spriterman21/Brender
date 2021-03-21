@@ -10,6 +10,7 @@ namespace Brender_0_5
         public Ref<string> name = new Ref<string> { value = "test" };
         public Object[] objects = new Object[0];
         public Camera mainCamera;
+        public CustomColor[] colors;
 
         public string Name
         {
@@ -38,6 +39,13 @@ namespace Brender_0_5
             loopExit:;
 
             Name = "Name";
+
+            colors = new CustomColor[16];
+            for (int i = 0; i < 16; i++)
+            {
+                colors[i] = new CustomColor(i);
+                colors[i].SetBaseColor();
+            }
         }
 
         public List<Component> components;
@@ -137,7 +145,9 @@ namespace Brender_0_5
             "Name",
             "objects",
             "Main Camera",
-            "SAVE"
+            "Color palette",
+            "SAVE",
+            "EXIT"
         };
 
         public void StartOwnMenu()
@@ -150,11 +160,15 @@ namespace Brender_0_5
             {
                 obj.Add(objects[i]);
             }
+
+            List<CustomColor> listColors = new List<CustomColor>(colors);
             
             optionFns.Add(name);
             optionFns.Add(obj);
             optionFns.Add(mainCamera);
+            optionFns.Add(listColors);
             optionFns.Add(new Saver(this));
+            optionFns.Add(new SceneExit());
             
             // starting menu
             ListMenu<object> menu = new ListMenu<object>(name, options, optionFns);
@@ -165,6 +179,7 @@ namespace Brender_0_5
 
             // restoring some possibly changed variables back to this class
             objects = obj.ToArray();
+            colors = listColors.ToArray();
         }
         #endregion
 
@@ -176,6 +191,14 @@ namespace Brender_0_5
             {
                 obj.moved = true;
                 TheyMoved(obj.children);
+            }
+        }
+
+        public void UpdateColors()
+        {
+            for (int i = 0; i < colors.Length; i++)
+            {
+                colors[i].UpdateColor();
             }
         }
     }
@@ -228,4 +251,9 @@ namespace Brender_0_5
         }
     }*/
     #endregion
+
+    public class SceneExit
+    {
+
+    }
 }

@@ -24,7 +24,7 @@ namespace Brender_0_5
                 options[i + 1] = prefabs[i];
             }
 
-            ListMenu<Object> menu = new ListMenu<Object>("Choose object to add", options);
+            ListMenu<Object> menu = new ListMenu<Object>("Choose object to add", options, false, true);
             int chosenObject = menu.EngageMenu();
 
             // nothing chosen so just quit
@@ -72,7 +72,7 @@ namespace Brender_0_5
                 "Camera"
             };
 
-            ListMenu<Component> menu = new ListMenu<Component>("Choose a component to add", options);
+            ListMenu<Component> menu = new ListMenu<Component>("Choose a component to add", options, false, true);
             int chosenObject = menu.EngageMenu();
 
             switch (chosenObject)

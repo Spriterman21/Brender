@@ -37,45 +37,46 @@ namespace Brender_0_5
         List<T> changables; // array of different kinds of variables coresponding to their names in _options_
         int alignment = 0; // the topmost index shown on the screen (for when you want to scroll through the list, but your window is too small)
 
-        public bool canAddDelete = true; // meaning you can delete or add stuff in the menu
+        public bool canAddDelete = false; // meaning you can delete or add stuff in the menu
         bool returns = false;
+        bool stay;
 
         #region Menu constructors
-        public ListMenu(Ref<string> t, string[] o, List<T> c)
+        public ListMenu(Ref<string> t, string[] o, List<T> c, bool canAddDelete = false, bool returns = false)
         {
             title = t;
             options = new List<Ref<string>>();
             for (int i = 0; i < o.Length; i++)
             {
-                options.Add(new Ref<string> { value = o[i] });
+                options.Add(new Ref<string>(o[i]));
             }
             changables = c;
-            CanAddDelete();
+
+            this.canAddDelete = canAddDelete;
+            this.returns = returns;
         }
 
-        public ListMenu(string t, Ref<string>[] o, List<T> c)
+        public ListMenu(string t, Ref<string>[] o, List<T> c, bool canAddDelete = false, bool returns = false)
         {
             Title = t;
             options = new List<Ref<string>>(o);
             changables = c;
-            CanAddDelete();
+
+            this.canAddDelete = canAddDelete;
+            this.returns = returns;
         }
 
-        public ListMenu(string t, string[] o)
+        public ListMenu(string t, string[] o, bool canAddDelete = false, bool returns = false)
         {
             Title = t;
             options = new List<Ref<string>>();
             for (int i = 0; i < o.Length; i++)
             {
-                options.Add(new Ref<string> { value = o[i] });
+                options.Add(new Ref<string>(o[i]));
             }
 
-            returns = true;
-        }
-
-        void CanAddDelete()
-        {
-            canAddDelete = canAddDelete || !(typeof(T) is object);
+            this.canAddDelete = canAddDelete;
+            this.returns = returns;
         }
         #endregion
 
@@ -86,7 +87,7 @@ namespace Brender_0_5
 
             int index = 0;
             alignment = 0;
-            bool stay = true;
+            stay = true;
 
             Console.SetCursorPosition(0, 0);
             Console.BackgroundColor = ConsoleColor.Black;
@@ -142,7 +143,7 @@ namespace Brender_0_5
                             }
                             else
                             {
-                                MenuNecesities.DoThings((dynamic)changables[index]); // dynamically chooses what to do, with the selected option
+                                DoThings((dynamic)changables[index]); // dynamically chooses what to do, with the selected option
                                 Console.Clear();
                                 break;
                             }
@@ -164,6 +165,7 @@ namespace Brender_0_5
                         case ConsoleKey.Add: // adding object if possible
                             if (canAddDelete)
                             {
+                                if (returns) return -2;
                                 Add();
                                 Console.Clear();
                             }
@@ -276,7 +278,6 @@ namespace Brender_0_5
             else if (changables is List<Component>) newElement = new ComponentFactory().Create();
             else if (changables is List<Polygon>) newElement = new PolygonFactory().Create();
             else if (changables is List<Vector3>) newElement = new Vector3Factory().Create();
-            else if (changables is List<Scene>) newElement = new SceneFactory().Create();
             
             if (newElement != null && newElement.Item1 != null)
             {
@@ -284,15 +285,15 @@ namespace Brender_0_5
                 options.Add(newElement.Item2);
             }
         }
-    }
+   // }
 
 
 
     /// <summary>
     /// Functions necessary for all the menus for drawing and handling chosen options
     /// </summary>
-    public static class MenuNecesities
-    {
+    //public static class MenuNecesities
+   // {
         /// <summary>
         /// draws the menu centered on the screen
         /// </summary>
@@ -323,7 +324,7 @@ namespace Brender_0_5
         /// Method to change ints
         /// </summary>
         /// <param name="value"></param>
-        public static void DoThings(Ref<int> i)
+        void DoThings(Ref<int> i)
         {
             Console.Clear();
             Console.WriteLine("old int:" + i.value);
@@ -344,7 +345,7 @@ namespace Brender_0_5
         /// method to change floats
         /// </summary>
         /// <param name="f"></param>
-        public static void DoThings(Ref<float> f)
+        void DoThings(Ref<float> f)
         {
             Console.Clear();
             Console.WriteLine("old f:" + f.value);
@@ -365,7 +366,7 @@ namespace Brender_0_5
         /// method to change strings
         /// </summary>
         /// <param name="s"></param>
-        public static void DoThings(Ref<string> s)
+        void DoThings(Ref<string> s)
         {
             Console.Clear();
             Console.WriteLine("Old string:");
@@ -378,7 +379,7 @@ namespace Brender_0_5
         /// method to change CharInfo
         /// </summary>
         /// <param name="s"></param>
-        public static void DoThings(Ref<CharInfo> s)
+        void DoThings(Ref<CharInfo> s)
         {
             Console.Clear();
             Console.WriteLine("Choose a new char:");
@@ -411,26 +412,29 @@ namespace Brender_0_5
         #endregion
 
         #region Variables leeding deeper
-        public static void DoThings(Ref<quaternion> quaternion)
+        void DoThings(Ref<quaternion> quaternion)
         {
             Vector3 euler = Quaternion.QuatToEuler(quaternion.value, false);
             DoThings(euler);
             quaternion.value = Quaternion.Euler(euler, false);
         }
 
-        public static void DoThings(IMenu menuStarter)
+        void DoThings(IMenu menuStarter)
         {
             menuStarter.StartOwnMenu();
         }
 
-        public static void DoThings(Scene scene)
+        void DoThings(Scene scene)
         {
             ///////////////////////////////////////////////////////////////////////////////////////////
             // Main Process ///////////////////////////////////////////////////////////////////////////
             ///////////////////////////////////////////////////////////////////////////////////////////
             Console.Clear();
             scene.TheyMoved(scene.objects);
-            while (true)
+            scene.UpdateColors();
+            HolderClass.mainLoop = true;
+
+            while (HolderClass.mainLoop)
             {
                 System.Diagnostics.Debug.WriteLine("Started frame");
                 HolderClass.sw.Restart();
@@ -475,7 +479,7 @@ namespace Brender_0_5
         /// For when you wanna choose from a list of objects
         /// </summary>
         /// <param name="objects"></param>
-        public static void DoThings(List<Object> objects)
+        void DoThings(List<Object> objects)
         {
             string title = "Parented objects";
 
@@ -486,12 +490,11 @@ namespace Brender_0_5
             }
 
             // just starting the menu
-            ListMenu<Object> menu = new ListMenu<Object>(title, names, objects);
-            menu.canAddDelete = true;
+            ListMenu<Object> menu = new ListMenu<Object>(title, names, objects, true);
             menu.EngageMenu();
         }
 
-        public static void DoThings(List<Component> components)
+        void DoThings(List<Component> components)
         {
             string title = "Components";
 
@@ -502,12 +505,11 @@ namespace Brender_0_5
             }
 
             // just starting the menu
-            ListMenu<Component> menu = new ListMenu<Component>(title, names, components);
-            menu.canAddDelete = true;
+            ListMenu<Component> menu = new ListMenu<Component>(title, names, components, true);
             menu.EngageMenu();
         }
 
-        public static void DoThings(List<Polygon> polygons)
+        void DoThings(List<Polygon> polygons)
         {
             string title = "Polygons";
 
@@ -518,12 +520,11 @@ namespace Brender_0_5
             }
 
             // just starting the menu
-            ListMenu<Polygon> menu = new ListMenu<Polygon>(title, names, polygons);
-            menu.canAddDelete = true;
+            ListMenu<Polygon> menu = new ListMenu<Polygon>(title, names, polygons, true);
             menu.EngageMenu();
         }
 
-        public static void DoThings(List<Vector3> vector3s)
+        void DoThings(List<Vector3> vector3s)
         {
             string title = "Points";
 
@@ -534,51 +535,78 @@ namespace Brender_0_5
             }
 
             // just starting the menu
-            ListMenu<Vector3> menu = new ListMenu<Vector3>(title, names, vector3s);
+            ListMenu<Vector3> menu = new ListMenu<Vector3>(title, names, vector3s, true);
             menu.canAddDelete = true;
             menu.EngageMenu();
         }
 
-        public static void DoThings(List<Scene> scenes)
+        void DoThings(List<Scene> scenes)
         {
-            string title = "Scenes";
-            Ref<string>[] names;
+            Ref<string> title = new Ref<string>("Scenes");
 
-            // find scenes in their folder
-            string[] scenePaths = HolderClass.FileNames(HolderClass.scenesPath);
+            // find scene names in their folder
+            List<string> sceneNames = new List<string>(HolderClass.FileNames(HolderClass.scenesPath));
+            string[] backup = sceneNames.ToArray();
             scenes.Clear();
 
-            // get scene names
-            names = new Ref<string>[scenePaths.Length];
-            for (int i = 0; i < scenePaths.Length; i++)
-            {
-                scenes.Add(HolderClass.Loader<Scene>(HolderClass.scenesPath + "\\" + scenePaths[i]));
-                names[i] = scenes[i].name;
-            }
+            ListMenu<string> menu = new ListMenu<string>(title, sceneNames.ToArray(), sceneNames, true, true);
+            int chosenScene = menu.EngageMenu();
 
-            // backup current state of scenes
-            Scene[] backup = scenes.ToArray();
-
-            // start menu
-            ListMenu<Scene> menu = new ListMenu<Scene>(title, names, scenes);
-            menu.EngageMenu();
-
-            // for each backupped scene, check if it still exists, if not, delete its file too
             for (int i = 0; i < backup.Length; i++)
             {
-                if (!scenes.Contains(backup[i]) && File.Exists(HolderClass.scenesPath + "\\" + scenePaths[i]))
+                if (!sceneNames.Contains(backup[i]))
                 {
-                    Debug.WriteLine("Deleting file " + HolderClass.scenesPath + "\\" + scenePaths[i]);
-                    File.Delete(HolderClass.scenesPath + "\\" + scenePaths[i]);
+                    File.Delete(HolderClass.scenesPath + "\\" + backup[i]);
                 }
             }
+
+            if (chosenScene == -1) return;
+            if (chosenScene == -2)
+            {
+                Scene newScene = (Scene)new SceneFactory().Create().Item1;
+                Program.MainCycle(newScene);
+                return;
+            }
+
+            Scene loadedScene = HolderClass.Loader<Scene>(HolderClass.scenesPath + "\\" + sceneNames[chosenScene]);
+            Program.MainCycle(loadedScene);
+        }
+
+        void DoThings(List<CustomColor> colors)
+        {
+            string title = "Colors";
+
+            // get color names
+            Ref<string>[] names = new Ref<string>[colors.Count];
+            for (int i = 0; i < colors.Count; i++)
+            {
+                names[i] = colors[i].name;
+            }
+
+            // start menu
+            ListMenu<CustomColor> menu = new ListMenu<CustomColor>(title, names, colors);
+            menu.canAddDelete = false;
+            menu.EngageMenu();
         }
 
         #endregion
 
-        public static void DoThings(Saver saver)
+        void DoThings(Saver saver)
         {
             saver.Save();
+        }
+
+        void DoThings(SceneExit e)
+        {
+            stay = false;
+            HolderClass.mainLoop = false;
+
+            // reset colors to normal
+            for (int i = 0; i < 16; i++)
+            {
+                CustomColor baseColor = new CustomColor(i);
+                baseColor.SetBaseColor();
+            }
         }
     }
 }

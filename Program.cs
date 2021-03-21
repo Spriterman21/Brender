@@ -456,5 +456,54 @@ namespace Brender_0_5
                 HolderClass.scenesPath = scenesPath.value;
             }
         }
+
+        public static void MainCycle(Scene scene)
+        {
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            // Main Process ///////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            Console.Clear();
+            scene.TheyMoved(scene.objects);
+            scene.UpdateColors();
+            HolderClass.mainLoop = true;
+
+            while (HolderClass.mainLoop)
+            {
+                System.Diagnostics.Debug.WriteLine("Started frame");
+                HolderClass.sw.Restart();
+
+                ConsoleKeyInfo key = HolderClass.key = new ConsoleKeyInfo();
+                bool gotKey = false;
+
+                while (Console.KeyAvailable)
+                {
+                    key = Console.ReadKey(true);
+                    gotKey = true;
+                }
+
+                if (gotKey)
+                {
+                    HolderClass.key = key;
+                    if (HolderClass.key.Key == ConsoleKey.P)
+                    {
+                        HolderClass.debug = !HolderClass.debug;
+                    }
+                    if (key.Key == ConsoleKey.Escape)
+                    {
+                        scene.StartOwnMenu();
+                    }
+                }
+
+                scene.Update();
+
+                System.Diagnostics.Debug.WriteLine("Ended render: " + HolderClass.sw.Elapsed);
+                System.Diagnostics.Debug.WriteLine("");
+
+                System.Threading.Thread.Sleep((int)Math.Max(25 - HolderClass.sw.Elapsed.TotalMilliseconds, 0));
+                //Console.ReadLine();
+            }
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////
+        }
     }
 }

@@ -11,6 +11,8 @@ namespace Brender_0_5
     public static class HolderClass
     {
         public static Scene activeScene; // litterally what it says
+        public static bool mainLoop;
+
         public static List<Polygon> polygons; // collection of all polygons in active scene to be used by cameras
         public static ConsoleKeyInfo key; // the key pressed in this frame
         public static CharInfo background; // the default background of the console

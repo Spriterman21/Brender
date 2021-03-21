@@ -6,9 +6,118 @@ using System;
 using System.Diagnostics;                // for Debug
 using System.Drawing;                    // for Color (add reference to  System.Drawing.assembly)
 using System.Runtime.InteropServices;    // for StructLayout
+using System.Collections.Generic;
 
 namespace Brender_0_5
 {
+    [Serializable]
+    public class CustomColor : IMenu
+    {
+        #region basic properties ////////////////////////////////////
+        public Ref<string> name = new Ref<string>("Colour");
+
+        // RGB values
+        public Ref<int> r = new Ref<int>(0);
+        public Ref<int> g = new Ref<int>(0);
+        public Ref<int> b = new Ref<int>(0);
+
+        int replace = 0; // number of console color it replaces
+
+        readonly Tuple<int, int, int>[] baseColors = new Tuple<int, int, int>[]
+        {
+            new Tuple<int, int, int>(0, 0, 0),
+            new Tuple<int, int, int>(0, 0, 128),
+            new Tuple<int, int, int>(0, 128, 0),
+            new Tuple<int, int, int>(0, 128, 128),
+            new Tuple<int, int, int>(128, 0, 0),
+            new Tuple<int, int, int>(128, 0, 128),
+            new Tuple<int, int, int>(128, 128, 0),
+            new Tuple<int, int, int>(192, 192, 192),
+            new Tuple<int, int, int>(128, 128, 128),
+            new Tuple<int, int, int>(0, 0, 255),
+            new Tuple<int, int, int>(0, 255, 0),
+            new Tuple<int, int, int>(0, 255, 255),
+            new Tuple<int, int, int>(255, 0, 0),
+            new Tuple<int, int, int>(255, 0, 255),
+            new Tuple<int, int, int>(255, 255, 0),
+            new Tuple<int, int, int>(255, 255, 255)
+        };
+
+        readonly string[] baseNames = new string[]
+        {
+            "Black",
+            "DarkBlue",
+            "DarkGreen",
+            "DarkCyan",
+            "DarkRed",
+            "DarkMagenta",
+            "DarkYellow",
+            "Gray",
+            "DarkGrey",
+            "Blue",
+            "Green",
+            "Cyan",
+            "Red",
+            "Magenta",
+            "Yellow",
+            "White",
+        };
+        #endregion
+
+        public CustomColor(int replace)
+        {
+            this.replace = replace;
+        }
+
+        public void SetBaseColor()
+        {
+            name.value = baseNames[replace];
+
+            r.value = baseColors[replace].Item1;
+            g.value = baseColors[replace].Item2;
+            b.value = baseColors[replace].Item3;
+
+            UpdateColor();
+        }
+
+        public void UpdateColor()
+        {
+            SetScreenColorsApp.SetColor((ConsoleColor)replace, (uint)r.value, (uint)g.value, (uint)b.value);
+        }
+
+        #region Menu creation
+        static readonly string[] names = new string[] /* names of changable variables to be displayed in a menu when you want to change some of them */
+        {
+            "Name",
+            "Red",
+            "Green",
+            "Blue"
+        };
+
+        public void StartOwnMenu()
+        {
+            // creating options
+            List<object> optionFns = new List<object>();
+
+            optionFns.Add(name);
+            optionFns.Add(r);
+            optionFns.Add(g);
+            optionFns.Add(b);
+
+            // starting menu
+            ListMenu<object> menu = new ListMenu<object>(name, names, optionFns);
+            menu.EngageMenu();
+
+            r.value = r.value % 256;
+            g.value = g.value % 256;
+            b.value = b.value % 256;
+
+            UpdateColor();
+        }
+        #endregion
+
+    }
+
     class SetScreenColorsApp
     {
         [StructLayout(LayoutKind.Sequential)]
